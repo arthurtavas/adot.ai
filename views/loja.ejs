@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <title>Gestão da Loja — Adote um Amigo</title>
+  <link rel="stylesheet" href="/stylesheets/style.css">
+</head>
+<body>
+  <main class="main-sheet">
+    <!-- CABEÇALHO PROFISSIONAL COM LOGO -->
+    <header class="topo">
+      <div class="topo-barra">
+        <div class="marca-container">
+          <img 
+            src="/images/logo.png" 
+            alt="Logo Adote um Amigo" 
+            class="logo-site"
+            onerror="this.style.display='none'; document.getElementById('logo-fallback-loja').style.display='flex';"
+          >
+          <div id="logo-fallback-loja" class="logo-placeholder" style="display: none;">🐾</div>
+          
+          <div class="marca-texto">
+            <h1>Gestão da Loja</h1>
+            <p>Controle de pets disponíveis e solicitações de adoção</p>
+          </div>
+        </div>
+
+        <a href="/" class="btn-loja">
+          ← Voltar para a Vitrine
+        </a>
+      </div>
+    </header>
+
+    <!-- RESUMO RÁPIDO (MÉTRICAS MINIMALISTAS) -->
+    <section class="stats-grid">
+      <div class="stat-card">
+        <span class="stat-label">Pets Disponíveis</span>
+        <strong class="stat-valor"><%= cachorros.length %></strong>
+      </div>
+      <div class="stat-card">
+        <span class="stat-label">Solicitações de Adoção</span>
+        <strong class="stat-valor"><%= interessados.length %></strong>
+      </div>
+    </section>
+
+    <!-- BARRA DE CONTROLE: ABAS + BOTÃO NOVO PET -->
+    <div class="admin-toolbar">
+      <div class="tabs-nav">
+        <button type="button" class="tab-btn active" id="btn-tab-pets" onclick="mudarAba('pets')">
+          🐶 Pets Cadastrados
+        </button>
+        <button type="button" class="tab-btn" id="btn-tab-interessados" onclick="mudarAba('interessados')">
+          📋 Interessados (<%= interessados.length %>)
+        </button>
+      </div>
+
+      <button type="button" class="btn-primario" onclick="toggleFormCadastro()">
+        + Novo Pet
+      </button>
+    </div>
+
+    <!-- FORMULÁRIO RETRÁTIL DE CADASTRO -->
+    <section id="box-novo-pet" class="sub-box" style="display: none; margin-bottom: 24px;">
+      <div class="box-header-inline">
+        <h3>Cadastrar Novo Pet</h3>
+        <button type="button" class="btn-fechar-texto" onclick="toggleFormCadastro()">Fechar ✕</button>
+      </div>
+      <form action="/cachorros" method="POST" enctype="multipart/form-data" class="form-grid">
+        <input type="text" name="nome" placeholder="Nome" required>
+        <input type="text" name="raca" placeholder="Raça" required>
+        <input type="text" name="idade" placeholder="Idade (Ex: 2 anos)" required>
+        <input type="text" name="porte" placeholder="Porte (Pequeno, Médio, Grande)" required>
+        <label style="display: flex; flex-direction: column; gap: 4px; font-size: 13px;">
+          Foto (JPEG ou PNG, opcional)
+          <input type="file" name="foto" accept="image/jpeg,image/png">
+        </label>
+        <button type="submit" class="btn-primario">Salvar Cadastro</button>
+      </form>
+    </section>
+
+    <!-- FORMULÁRIO DE EDIÇÃO (APARECE AUTOMATICAMENTE AO CLICAR EM EDITAR) -->
+    <% if (cachorroParaEditar) { %>
+      <section class="box-edicao">
+        <h3>✏️ Editando: <%= cachorroParaEditar.nome %></h3>
+        <form action="/cachorros/editar/<%= cachorroParaEditar.id %>" method="POST" enctype="multipart/form-data" class="form-grid">
+          <input type="text" name="nome" value="<%= cachorroParaEditar.nome %>" required>
+          <input type="text" name="raca" value="<%= cachorroParaEditar.raca %>" required>
+          <input type="text" name="idade" value="<%= cachorroParaEditar.idade %>" required>
+          <input type="text" name="porte" value="<%= cachorroParaEditar.porte %>" required>
+          <label style="display: flex; flex-direction: column; gap: 4px; font-size: 13px;">
+            Nova foto (JPEG ou PNG). Deixe vazio para manter a atual
+            <input type="file" name="foto" accept="image/jpeg,image/png">
+          </label>
+          <div class="botoes-edicao">
+            <button type="submit" class="btn-editar">Salvar</button>
+            <a href="/loja" class="btn-secundario">Cancelar</a>
+          </div>
+        </form>
+      </section>
+    <% } %>
+
+    <!-- ABA 1: TABELA DE CACHORROS -->
+    <section id="aba-pets" class="bloco">
+      <div class="tabela-wrapper">
+        <table>
+          <thead>
+            <tr>
+              <th>Pet</th>
+              <th>Raça</th>
+              <th>Idade</th>
+              <th>Porte</th>
+              <th style="text-align: right;">Ações</th>
+            </tr>
+          </thead>
+          <tbody>
+            <% cachorros.forEach(dog => { %>
+              <tr>
+                <td>
+                  <div class="td-pet">
+                    <img 
+                      src="<%= dog.foto || 'https://placedog.net/100/100?id=15' %>" 
+                      alt="<%= dog.nome %>" 
+                      class="thumb-pet"
+                    >
+                    <div>
+                      <strong><%= dog.nome %></strong>
+                      <span class="sub-id">#<%= dog.id %></span>
+                    </div>
+                  </div>
+                </td>
+                <td><%= dog.raca %></td>
+                <td><%= dog.idade %></td>
+                <td><span class="badge-porte"><%= dog.porte %></span></td>
+                <td>
+                  <div class="acoes-tabela">
+                    <a href="/loja?editar=<%= dog.id %>" class="btn-acao-limpo">Editar</a>
+                    <form action="/cachorros/excluir/<%= dog.id %>" method="POST" style="margin: 0;">
+                      <button type="submit" class="btn-acao-perigo">Excluir</button>
+                    </form>
+                  </div>
+                </td>
+              </tr>
+            <% }) %>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- ABA 2: TABELA DE INTERESSADOS -->
+    <section id="aba-interessados" class="bloco" style="display: none;">
+      <div class="tabela-wrapper">
+        <table>
+          <thead>
+            <tr>
+              <th>Cliente</th>
+              <th>Telefone / WhatsApp</th>
+              <th>Pet Escolhido</th>
+              <th>Observação</th>
+              <th style="text-align: right;">Ações</th>
+            </tr>
+          </thead>
+          <tbody>
+            <% interessados.forEach(item => { %>
+              <tr>
+                <td>
+                  <strong><%= item.nome_cliente %></strong>
+                  <span class="sub-id">#<%= item.id %></span>
+                </td>
+                <td><%= item.telefone %></td>
+                <td><span class="badge-porte"><%= item.cachorro_interesse %></span></td>
+                <td class="texto-suave"><%= item.observacao || '—' %></td>
+                <td>
+                  <div class="acoes-tabela">
+                    <form action="/itens/excluir/<%= item.id %>" method="POST" style="margin: 0;">
+                      <button type="submit" class="btn-acao-perigo">Concluir / Remover</button>
+                    </form>
+                  </div>
+                </td>
+              </tr>
+            <% }) %>
+          </tbody>
+        </table>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    function mudarAba(aba) {
+      const secPets = document.getElementById('aba-pets');
+      const secInteressados = document.getElementById('aba-interessados');
+      const btnPets = document.getElementById('btn-tab-pets');
+      const btnInteressados = document.getElementById('btn-tab-interessados');
+
+      if (aba === 'pets') {
+        secPets.style.display = 'block';
+        secInteressados.style.display = 'none';
+        btnPets.classList.add('active');
+        btnInteressados.classList.remove('active');
+      } else {
+        secPets.style.display = 'none';
+        secInteressados.style.display = 'block';
+        btnPets.classList.remove('active');
+        btnInteressados.classList.add('active');
+      }
+    }
+
+    function toggleFormCadastro() {
+      const box = document.getElementById('box-novo-pet');
+      box.style.display = box.style.display === 'none' ? 'block' : 'none';
+    }
+  </script>
+</body>
+</html>
