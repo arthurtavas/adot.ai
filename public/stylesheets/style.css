@@ -131,8 +131,8 @@ a {
 }
 
 .logo-site {
-  width: 76px;
-  height: 76px;
+  width: auto;
+  height: 90px;
   object-fit: contain;
   display: block;
 
