@@ -17,7 +17,8 @@
             class="logo-site"
             onerror="this.style.display='none'; document.getElementById('logo-fallback').style.display='flex';"
           >
-          
+          <div id="logo-fallback" class="logo-placeholder" style="display: none;">🐾</div>
+
           <div class="marca-texto">
             <h1>Adote um Amigo</h1>
             <p>Encontre seu novo companheiro e agende sua visita</p>
@@ -30,20 +31,38 @@
       </div>
     </header>
 
-    <!-- ALERTA DE CONFIRMAÇÃO PERSONALIZADO (APARECE APÓS ADOTAR) -->
-    <div id="aviso-adocao" class="card-confirmacao" style="display: none;">
-      <div class="confirmacao-conteudo">
-        <h3>🎉 Parabéns! Você ganhou seu novo amigo! 🐾</h3>
-        <p>Que alegria! O <strong id="pet-confirmado"></strong> está ansioso para conhecer você. Já recebemos seu cadastro e nossa equipe entrará em contato pelo WhatsApp.</p>
-        <div class="box-endereco">
-          <p><strong>📍 Local para Buscar seu Novo Amigo:</strong></p>
-          <p>Rua Batista de Carvalho, 12-40 — Centro, Bauru/SP</p>
-          <p><strong>🕒 Horário de Atendimento:</strong> Segunda a Sábado, das 09h às 18h</p>
-          <p><strong>📄 Documentos necessários:</strong> RG, CPF e comprovante de residência</p>
+    <!-- AVISO DO "QUERO ADOTAR": o resultado vem do servidor (?interesse=...), não do navegador -->
+    <% if (aviso === 'ok') { %>
+      <div id="aviso-adocao" class="card-confirmacao" role="status">
+        <div class="confirmacao-conteudo">
+          <h3>🎉 Parabéns! Você ganhou seu novo amigo! 🐾</h3>
+          <p>Que alegria! O <strong><%= petAviso %></strong> está ansioso para conhecer você. Já recebemos seu cadastro e nossa equipe entrará em contato pelo WhatsApp.</p>
+          <div class="box-endereco">
+            <p><strong>📍 Local para Buscar seu Novo Amigo:</strong></p>
+            <p>Rua Batista de Carvalho, 12-40 — Centro, Bauru/SP</p>
+            <p><strong>🕒 Horário de Atendimento:</strong> Segunda a Sábado, das 09h às 18h</p>
+            <p><strong>📄 Documentos necessários:</strong> RG, CPF e comprovante de residência</p>
+          </div>
+          <button type="button" class="btn-primario" onclick="fecharAviso()">Entendi, mal posso esperar!</button>
         </div>
-        <button type="button" class="btn-primario" onclick="fecharAviso()">Entendi, mal posso esperar!</button>
       </div>
-    </div>
+    <% } else if (aviso) { %>
+      <div id="aviso-adocao" class="card-confirmacao card-aviso" role="alert">
+        <div class="confirmacao-conteudo">
+          <% if (aviso === 'duplicado') { %>
+            <h3>Você já demonstrou interesse neste pet 🐾</h3>
+            <p>Já temos o seu contato para o <strong><%= petAviso %></strong>. Nossa equipe falará com você pelo WhatsApp, não precisa enviar de novo.</p>
+          <% } else if (aviso === 'indisponivel') { %>
+            <h3>Este pet não está mais disponível</h3>
+            <p>Ele pode ter sido adotado ou removido da lista. Dê uma olhada nos outros amigos abaixo.</p>
+          <% } else { %>
+            <h3>Muitas solicitações em pouco tempo</h3>
+            <p>Por segurança, limitamos o número de envios. Aguarde alguns minutos e tente novamente.</p>
+          <% } %>
+          <button type="button" class="btn-primario" onclick="fecharAviso()">Ok</button>
+        </div>
+      </div>
+    <% } %>
 
     <!-- BARRA DE PESQUISA -->
     <section class="bloco">
@@ -63,8 +82,6 @@
     Eles só precisam de uma chance e do seu amor ❤️
   </p>
 
-  <div class="pets-grid">
-
       <div class="pets-grid">
         <% cachorros.forEach(dog => { %>
           <article class="pet-card">
@@ -72,6 +89,8 @@
               src="<%= dog.foto || 'https://placedog.net/400/300?id=15' %>" 
               alt="<%= dog.nome %>" 
               class="pet-foto"
+              loading="lazy"
+              decoding="async"
             >
             <div class="pet-info">
               <div class="pet-header">
@@ -112,17 +131,17 @@
         </div>
       </div>
 
-      <form id="form-adocao-modal" action="/itens" method="POST" onsubmit="salvarConfirmacaoLocal()">
+      <form id="form-adocao-modal" action="/itens" method="POST" onsubmit="travarEnvio(this)">
         <input type="hidden" id="input-cachorro-interesse" name="cachorro_interesse">
         
         <label>Seu Nome Completo</label>
-        <input type="text" name="nome_cliente" placeholder="Ex: Ana Paula Silva" required>
+        <input type="text" name="nome_cliente" placeholder="Ex: Ana Paula Silva" maxlength="100" required>
         
         <label>Telefone / WhatsApp para Contato</label>
-        <input type="text" name="telefone" placeholder="Ex: (14) 99999-8888" required>
+        <input type="tel" name="telefone" placeholder="Ex: (14) 99999-8888" maxlength="20" inputmode="tel" required>
         
         <label>Observação ou Melhor Horário (opcional)</label>
-        <input type="text" name="observacao" placeholder="Ex: Posso visitar sábado de manhã">
+        <input type="text" name="observacao" placeholder="Ex: Posso visitar sábado de manhã" maxlength="255">
         
         <button type="submit" class="btn-primario" style="width: 100%; margin-top: 10px; padding: 14px;">
           Confirmar Interesse e Ver Local da Adoção
@@ -148,22 +167,30 @@
       document.getElementById('modal-adocao').style.display = 'none';
     }
 
-    function salvarConfirmacaoLocal() {
-      const pet = document.getElementById('input-cachorro-interesse').value;
-      localStorage.setItem('adocao_recente_pet', pet);
+    // Evita duplo clique/duplo envio. (A regra de verdade é aplicada no servidor; isto é só conforto de uso.)
+    function travarEnvio(form) {
+      const botao = form.querySelector('button[type="submit"]');
+      botao.disabled = true;
+      botao.textContent = 'Enviando...';
     }
 
     function fecharAviso() {
-      document.getElementById('aviso-adocao').style.display = 'none';
-      localStorage.removeItem('adocao_recente_pet');
+      const aviso = document.getElementById('aviso-adocao');
+      if (aviso) aviso.style.display = 'none';
     }
 
-    window.addEventListener('DOMContentLoaded', () => {
-      const petAdotado = localStorage.getItem('adocao_recente_pet');
-      if (petAdotado) {
-        document.getElementById('pet-confirmado').innerText = petAdotado;
-        document.getElementById('aviso-adocao').style.display = 'block';
+    // Se o navegador restaurar a página pelo botão "voltar", destrava o botão de envio.
+    window.addEventListener('pageshow', () => {
+      const botao = document.querySelector('#form-adocao-modal button[type="submit"]');
+      if (botao) {
+        botao.disabled = false;
+        botao.textContent = 'Confirmar Interesse e Ver Local da Adoção';
       }
+    });
+
+    // Limpa ?interesse=...&pet=... da barra de endereço: ao atualizar a página, o aviso não reaparece.
+    window.addEventListener('DOMContentLoaded', () => {
+      if (document.getElementById('aviso-adocao')) history.replaceState(null, '', location.pathname);
     });
   </script>
 </body>

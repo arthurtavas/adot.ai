@@ -8,6 +8,10 @@ const HttpError = require('./httpError');
 const PASTA_UPLOADS = path.join(__dirname, '..', 'public', 'uploads');
 const URL_BASE = '/uploads/';
 
+// Único formato de nome que salvarImagem() gera. removerImagem() só aceita este formato,
+// então valores estranhos vindos do banco ("../../app.js", "/uploads/", subpastas...) nunca viram caminho.
+const NOME_GERADO = /^\d{10,}-[a-f0-9]{12}\.(?:jpg|png)$/;
+
 const ASSINATURA_PNG = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]);
 
 // Confere o conteúdo real do arquivo (o tipo informado pelo navegador pode ser falsificado).
@@ -33,16 +37,37 @@ async function salvarImagem(arquivo) {
   return URL_BASE + nome;
 }
 
-/** Apaga o arquivo de uma foto enviada por upload. Fotos antigas (links externos) são ignoradas. */
-async function removerImagem(foto) {
-  if (typeof foto !== 'string' || !foto.startsWith(URL_BASE)) return;
+/**
+ * Converte o valor guardado no banco ("/uploads/nome.png") no caminho absoluto do arquivo,
+ * ou null se o valor não for uma foto enviada por upload (vazio, link externo, nome suspeito).
+ */
+function caminhoDaFoto(foto) {
+  if (typeof foto !== 'string' || !foto.startsWith(URL_BASE)) return null;
 
-  const nome = path.basename(foto); // basename impede sair da pasta de uploads
+  const nome = foto.slice(URL_BASE.length);
+  if (!NOME_GERADO.test(nome)) return null; // barra "..", "/", "\\", "%2e", nomes vazios etc.
+
+  const caminho = path.resolve(PASTA_UPLOADS, nome);
+  if (path.dirname(caminho) !== PASTA_UPLOADS) return null; // defesa em profundidade: tem que estar DIRETO em uploads/
+  return caminho;
+}
+
+/**
+ * Apaga o arquivo de uma foto enviada por upload. Nunca lança erro:
+ * quem chama já mexeu no banco e não deve falhar por causa de um arquivo.
+ * - foto vazia / link externo / nome inválido: ignorado
+ * - arquivo já inexistente (ENOENT): ignorado
+ * - qualquer outra falha (permissão...): vai para o log; sobra no máximo um arquivo órfão
+ */
+async function removerImagem(foto) {
+  const caminho = caminhoDaFoto(foto);
+  if (!caminho) return;
+
   try {
-    await fs.unlink(path.join(PASTA_UPLOADS, nome));
+    await fs.unlink(caminho);
   } catch (err) {
-    if (err.code !== 'ENOENT') console.error(`Não foi possível apagar a imagem ${nome}:`, err);
+    if (err.code !== 'ENOENT') console.error(`Não foi possível apagar a imagem ${path.basename(caminho)}:`, err);
   }
 }
 
-module.exports = { salvarImagem, removerImagem };
+module.exports = { PASTA_UPLOADS, salvarImagem, removerImagem };

@@ -25,9 +25,15 @@
           </div>
         </div>
 
-        <a href="/" class="btn-loja">
-          ← Voltar para a Vitrine
-        </a>
+        <div class="topo-acoes">
+          <a href="/" class="btn-loja">
+            ← Voltar para a Vitrine
+          </a>
+          <!-- POST (e não link GET): um site externo não consegue deslogar o funcionário -->
+          <form action="/logout" method="POST" style="margin: 0;">
+            <button type="submit" class="btn-loja">Sair 🔒</button>
+          </form>
+        </div>
       </div>
     </header>
 
@@ -35,7 +41,7 @@
     <section class="stats-grid">
       <div class="stat-card">
         <span class="stat-label">Pets Disponíveis</span>
-        <strong class="stat-valor"><%= cachorros.length %></strong>
+        <strong class="stat-valor"><%= petsDisponiveis %></strong>
       </div>
       <div class="stat-card">
         <span class="stat-label">Solicitações de Adoção</span>
@@ -109,6 +115,7 @@
               <th>Raça</th>
               <th>Idade</th>
               <th>Porte</th>
+              <th>Situação</th>
               <th style="text-align: right;">Ações</th>
             </tr>
           </thead>
@@ -131,10 +138,16 @@
                 <td><%= dog.raca %></td>
                 <td><%= dog.idade %></td>
                 <td><span class="badge-porte"><%= dog.porte %></span></td>
+                <td><%= Number(dog.disponivel) === 1 ? 'Disponível' : 'Adotado / Indisponível' %></td>
                 <td>
                   <div class="acoes-tabela">
+                    <% if (Number(dog.disponivel) !== 1) { %>
+                      <form action="/cachorros/disponibilizar/<%= dog.id %>" method="POST" style="margin: 0;">
+                        <button type="submit" class="btn-acao-limpo">Tornar disponível</button>
+                      </form>
+                    <% } %>
                     <a href="/loja?editar=<%= dog.id %>" class="btn-acao-limpo">Editar</a>
-                    <form action="/cachorros/excluir/<%= dog.id %>" method="POST" style="margin: 0;">
+                    <form action="/cachorros/excluir/<%= dog.id %>" method="POST" style="margin: 0;" data-nome="<%= dog.nome %>" onsubmit="return confirmarExclusao(this)">
                       <button type="submit" class="btn-acao-perigo">Excluir</button>
                     </form>
                   </div>
@@ -202,6 +215,11 @@
         btnPets.classList.remove('active');
         btnInteressados.classList.add('active');
       }
+    }
+
+    // O nome vem de data-nome (e não de dentro de uma string JS) para que aspas no nome do pet não quebrem o script.
+    function confirmarExclusao(form) {
+      return confirm('Excluir "' + form.dataset.nome + '"? O cadastro e a foto serão apagados e não dá para desfazer.');
     }
 
     function toggleFormCadastro() {

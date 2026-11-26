@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex">
+  <title>Acesso da Loja — Adote um Amigo</title>
+  <link rel="stylesheet" href="/stylesheets/style.css">
+</head>
+<body>
+  <main class="main-sheet">
+    <header class="topo">
+      <div class="topo-barra">
+        <div class="marca-container">
+          <img
+            src="/images/logo.png"
+            alt="Logo Adote um Amigo"
+            class="logo-site"
+            onerror="this.style.display='none'; document.getElementById('logo-fallback-login').style.display='flex';"
+          >
+          <div id="logo-fallback-login" class="logo-placeholder" style="display: none;">🐾</div>
+
+          <div class="marca-texto">
+            <h1>Acesso da Loja</h1>
+            <p>Área restrita para funcionários</p>
+          </div>
+        </div>
+
+        <a href="/" class="btn-loja">← Voltar para a Vitrine</a>
+      </div>
+    </header>
+
+    <section class="bloco login-box">
+      <form action="/login" method="POST" autocomplete="off">
+        <label for="senha">Senha</label>
+        <input type="password" id="senha" name="senha" autocomplete="current-password" maxlength="128" autofocus required>
+
+        <% if (erro) { %>
+          <p class="login-erro" role="alert"><%= erro %></p>
+        <% } %>
+
+        <button type="submit" class="btn-primario" style="width: 100%; margin-top: 10px; padding: 14px;">Entrar</button>
+      </form>
+    </section>
+  </main>
+</body>
+</html>
