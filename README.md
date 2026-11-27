@@ -42,13 +42,23 @@ npm install
 
 **4. Configure o banco de dados:**
 
-Execute o arquivo `script.sql` no MySQL Workbench.
+Abra o MySQL Workbench e execute o arquivo `script.sql` para criar o banco de dados e as tabelas necessárias.
 
 **5. Configure o ambiente:**
 
-Copie o arquivo `.env.example` para `.env` e preencha as configurações necessárias.
+Copie o arquivo `.env.example`, crie um arquivo chamado `.env` na raiz do projeto e preencha as configurações necessárias, incluindo os dados de acesso ao MySQL.
 
-**6. Inicie a aplicação:**
+**6. Gere as credenciais administrativas:**
+
+Execute o comando:
+
+```bash
+npm run gerar-credenciais
+```
+
+Copie as linhas geradas e coloque os valores correspondentes nas variáveis `ADMIN_PASSWORD_HASH` e `SESSION_SECRET` do arquivo `.env`.
+
+**7. Inicie a aplicação:**
 
 ```bash
 npm start
