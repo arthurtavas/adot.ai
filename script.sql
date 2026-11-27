@@ -1,0 +1,28 @@
+CREATE DATABASE IF NOT EXISTS bdnode
+CHARACTER SET utf8mb4
+COLLATE utf8mb4_0900_ai_ci;
+
+USE bdnode;
+
+CREATE TABLE IF NOT EXISTS cachorros (
+    id INT NOT NULL AUTO_INCREMENT,
+    nome VARCHAR(50) NOT NULL,
+    raca VARCHAR(50) NOT NULL,
+    idade VARCHAR(20) NOT NULL,
+    porte VARCHAR(20) NOT NULL,
+    foto VARCHAR(500) DEFAULT NULL,
+    PRIMARY KEY (id)
+) ENGINE=InnoDB
+DEFAULT CHARSET=utf8mb4
+COLLATE=utf8mb4_0900_ai_ci;
+
+CREATE TABLE IF NOT EXISTS interessados (
+    id INT NOT NULL AUTO_INCREMENT,
+    nome_cliente VARCHAR(100) NOT NULL,
+    telefone VARCHAR(20) NOT NULL,
+    cachorro_interesse VARCHAR(50) NOT NULL,
+    observacao VARCHAR(100) DEFAULT NULL,
+    PRIMARY KEY (id)
+) ENGINE=InnoDB
+DEFAULT CHARSET=utf8mb4
+COLLATE=utf8mb4_0900_ai_ci;
